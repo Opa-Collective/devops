@@ -1,0 +1,27 @@
+---
+- name: Create a new administrative user
+  hosts: all # This will run on all hosts defined in your inventory
+  become: true # Uses sudo to run tasks as root
+
+  vars:
+    new_user_name: "adminuser"
+    # IMPORTANT: Generate this hash on your machine with:
+    # openssl passwd -6 "a_very_strong_password_for_the_new_user"
+    new_user_password_hash: "$6$your$hashedpasswordgoeshere"
+    admin_ssh_public_key_file: "~/.ssh/id_rsa.pub"
+
+  tasks:
+    - name: Create the new sudo user
+      ansible.builtin.user:
+        name: "{{ new_user_name }}"
+        password: "{{ new_user_password_hash }}"
+        groups: sudo
+        shell: /bin/bash
+        create_home: yes
+        state: present
+
+    - name: Deploy SSH public key for the new user
+      ansible.posix.authorized_key:
+        user: "{{ new_user_name }}"
+        key: "{{ lookup('file', admin_ssh_public_key_file) }}"
+        state: present
