@@ -1,5 +1,5 @@
 # Sensitive or temporary files that should not be committed to version control
-ansible/servers_orig.yaml
+ansible/servers.yaml
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
