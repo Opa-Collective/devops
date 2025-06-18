@@ -1,0 +1,75 @@
+---
+- name: Harden all servers with security best practices
+  hosts:
+  - contabo-10
+  become: true
+
+  tasks:
+    #--------------------------------
+    # SECTION 1: CONFIGURE SSH
+    #--------------------------------
+    - name: Disallow root login via SSH with password
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?PermitRootLogin'
+        line: 'PermitRootLogin prohibit-password'
+        state: present
+        validate: 'sshd -t -f %s'
+      notify: Restart sshd
+
+    #--------------------------------
+    # SECTION 2: CONFIGURE FIREWALL (UFW)
+    #--------------------------------
+    - name: Install UFW (Uncomplicated Firewall)
+      ansible.builtin.apt:
+        name: ufw
+        state: present
+
+    - name: Set UFW default policies
+      community.general.ufw:
+        direction: "{{ item.direction }}"
+        policy: "{{ item.policy }}"
+      loop:
+        - { direction: 'incoming', policy: 'deny' }
+        - { direction: 'outgoing', policy: 'allow' }
+
+    - name: Allow essential SSH traffic on all servers
+      community.general.ufw:
+        rule: allow
+        name: OpenSSH
+      notify: Enable UFW
+
+    # Add other rules here if needed. For example, for web servers:
+    # - name: Allow HTTP and HTTPS traffic
+    #   community.general.ufw:
+    #     rule: allow
+    #     port: "{{ item }}"
+    #     proto: tcp
+    #   loop:
+    #     - '80'  # HTTP
+    #     - '443' # HTTPS
+
+  #--------------------------------
+  # SECTION 3: INSTALL FAIL2BAN
+  #--------------------------------
+    - name: Install fail2ban to prevent brute-force attacks
+      ansible.builtin.apt:
+        name: fail2ban
+        state: present
+
+    - name: Ensure fail2ban service is running and enabled
+      ansible.builtin.service:
+        name: fail2ban
+        state: started
+        enabled: yes
+
+  # Handlers are only run if a task notifies them (i.e., if a change was made)
+  handlers:
+    - name: Restart sshd
+      ansible.builtin.service:
+        name: sshd
+        state: restarted
+
+    - name: Enable UFW
+      community.general.ufw:
+        state: enabled

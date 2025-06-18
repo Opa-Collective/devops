@@ -1,6 +1,7 @@
 # Sensitive or temporary files that should not be committed to version control
 # Exclude all .yml files except those ending with .vault.yml
-*.yml
+ansible/servers.yml
+ansible/playbooks/vars/secrets.yml
 !*.vault.yml
 
 # Byte-compiled / optimized / DLL files
