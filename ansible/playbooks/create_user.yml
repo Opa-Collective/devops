@@ -1,19 +1,29 @@
 ---
-- name: Create a new administrative user
-  hosts: all # This will run on all hosts defined in your inventory
-  become: true # Uses sudo to run tasks as root
+- name: Create a new administrative skovnats user
+  hosts:
+    - brain
+    - eyes
+    - mlcompute
+    - datahub
+    - workersplus
+    - workersinternal
+    - workers
+  become: true
 
+  # Load the encrypted variables at runtime
+  vars_files:
+    - vars/secrets.yml
+
+  # Non-sensitive variables can remain here
   vars:
-    new_user_name: "adminuser"
-    # IMPORTANT: Generate this hash on your machine with:
-    # openssl passwd -6 "a_very_strong_password_for_the_new_user"
-    new_user_password_hash: "$6$your$hashedpasswordgoeshere"
-    admin_ssh_public_key_file: "~/.ssh/id_rsa.pub"
+    new_user_name: "skovnats"
+    admin_ssh_public_key_file: "/home/skovnats/.ssh/id_rsa.pub"
 
   tasks:
     - name: Create the new sudo user
       ansible.builtin.user:
         name: "{{ new_user_name }}"
+        # This variable now comes from the encrypted file
         password: "{{ new_user_password_hash }}"
         groups: sudo
         shell: /bin/bash
